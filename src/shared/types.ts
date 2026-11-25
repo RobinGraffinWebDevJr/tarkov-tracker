@@ -56,6 +56,24 @@ export interface UpdateState {
   checkedAt?: number
 }
 
+export interface ScanPage {
+  /** Numéro de page lu dans la pagination du jeu, null s'il n'a pas pu être lu */
+  page: number | null
+  file: string
+}
+
+/** État de la lecture de la fenêtre « Recherche d'objet » (stash). */
+export interface SearchScan {
+  /** La fenêtre est visible dans la dernière capture */
+  active: boolean
+  /** Pages enregistrées : une image par page, quelle que soit la vitesse à laquelle tu les tournes */
+  pages: ScanPage[]
+  /** Page affichée en ce moment, null si inconnue */
+  current: number | null
+  /** Pages que la pagination a montrées mais qui n'ont pas encore été enregistrées */
+  missing: number[]
+}
+
 export interface ScanStatus {
   running: boolean
   /** Fenêtre du jeu trouvée dans la dernière capture */
@@ -71,4 +89,5 @@ export interface ScanStatus {
   message: string
   /** Aperçu (data URL) de la dernière capture */
   preview: string | null
+  search: SearchScan
 }

@@ -16,11 +16,17 @@ export default function ScanPage(): React.JSX.Element {
       <div className="topbar">
         <h2>Scan de l&apos;inventaire</h2>
         <span className="spacer" />
-        <button onClick={() => void window.api.openScanDir()}>Ouvrir le dossier des captures</button>
+        <button onClick={() => void window.api.openScanDir()}>
+          Ouvrir le dossier des captures
+        </button>
         {running ? (
-          <button className="active" onClick={() => void window.api.stopScan()}>Terminer le scan</button>
+          <button className="active" onClick={() => void window.api.stopScan()}>
+            Terminer le scan
+          </button>
         ) : (
-          <button className="active" onClick={() => void window.api.startScan()}>Démarrer le scan</button>
+          <button className="active" onClick={() => void window.api.startScan()}>
+            Démarrer le scan
+          </button>
         )}
       </div>
 
@@ -50,11 +56,39 @@ export default function ScanPage(): React.JSX.Element {
 
       {s?.message && <div className="warn">{s.message}</div>}
 
+      {(running || (s?.search.pages.length ?? 0) > 0) && s && (
+        <div className="cards">
+          <div className="card">
+            <div className="label">Recherche d&apos;objet</div>
+            <div className="value">{s.search.active ? 'Détectée ✓' : '—'}</div>
+          </div>
+          <div className="card">
+            <div className="label">Page affichée</div>
+            <div className="value">{s.search.active ? (s.search.current ?? '?') : '—'}</div>
+          </div>
+          <div className="card">
+            <div className="label">Pages enregistrées</div>
+            <div className="value">
+              {s.search.pages.length ? s.search.pages.map((p) => p.page ?? '?').join(', ') : '—'}
+            </div>
+          </div>
+          <div className="card">
+            <div className="label">Pages à voir</div>
+            <div className="value">
+              {s.search.missing.length ? s.search.missing.join(', ') : '—'}
+            </div>
+          </div>
+        </div>
+      )}
+
       {running && (
         <p className="muted">
-          Scan en cours. Dans le jeu : ouvre le stash et fais-le défiler lentement, puis ouvre le sac,
-          le rig, les poches, le secure container, la boîte du lucky scav, et une zone de la planque
-          (écran d&apos;amélioration). Garde chaque vue 2 secondes. Reviens ici et clique sur « Terminer ».
+          Scan en cours. Pour le stash : ouvre la fenêtre « Recherche d&apos;objet » (filtre « cube
+          », stash seulement) et tourne les pages une par une, environ 1 seconde chacune. Chaque
+          page est enregistrée une seule fois, et les pages manquantes s&apos;affichent ci-dessus.
+          Pour le reste (équipement porté, présentoirs), affiche l&apos;écran et garde-le 2
+          secondes. Ne laisse qu&apos;une fenêtre ouverte à la fois. Reviens ici et clique sur «
+          Terminer ».
         </p>
       )}
 
