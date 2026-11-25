@@ -32,7 +32,7 @@ let pending: { latest: string; exeUrl: string; shaUrl: string } | null = null
 const exePath = (): string | undefined => process.env['PORTABLE_EXECUTABLE_FILE']
 
 function set(next: UpdateState): void {
-  state = next
+  state = { ...next, checkedAt: next.checkedAt ?? state.checkedAt }
   for (const w of BrowserWindow.getAllWindows()) w.webContents.send('update:changed', state)
 }
 
@@ -48,7 +48,7 @@ function isNewer(latest: string, current: string): boolean {
 }
 
 async function check(): Promise<void> {
-  if (state.kind === 'downloading') return
+  if (state.kind === 'downloading' || state.kind === 'disabled') return
   try {
     const res = await fetch(LATEST, {
       headers: { 'User-Agent': USER_AGENT, Accept: 'application/vnd.github+json' },
@@ -60,13 +60,23 @@ async function check(): Promise<void> {
     const exe = rel.assets.find((a) => a.name === ASSET)
     const sha = rel.assets.find((a) => a.name === `${ASSET}.sha256`)
     if (!isNewer(latest, app.getVersion()) || !exe || !sha) {
-      set({ kind: 'up-to-date', version: app.getVersion() })
+      const why =
+        isNewer(latest, app.getVersion()) && (!exe || !sha)
+          ? `v${latest} publiée mais sans exe ou empreinte`
+          : undefined
+      set({ kind: 'up-to-date', version: app.getVersion(), latest, message: why, checkedAt: Date.now() })
       return
     }
     pending = { latest, exeUrl: exe.browser_download_url, shaUrl: sha.browser_download_url }
-    set({ kind: 'available', version: app.getVersion(), latest })
-  } catch {
-    // Hors ligne ou limite GitHub : on garde l'état précédent, on réessaiera dans 5 minutes.
+    set({ kind: 'available', version: app.getVersion(), latest, checkedAt: Date.now() })
+  } catch (e) {
+    // Hors ligne ou limite GitHub : on garde le type d'état, on réessaiera dans 5 minutes,
+    // mais l'erreur reste visible dans l'interface.
+    set({
+      ...state,
+      message: `Vérification impossible : ${e instanceof Error ? e.message : String(e)}`,
+      checkedAt: Date.now()
+    })
   }
 }
 
@@ -108,12 +118,26 @@ async function install(): Promise<void> {
 export function initUpdater(): void {
   ipcMain.handle('update:get', () => state)
   ipcMain.handle('update:install', () => install())
+  ipcMain.handle('update:check', async () => {
+    await check()
+    return state
+  })
 
   const target = exePath()
-  if (!app.isPackaged || process.platform !== 'win32' || !target) return
+  const reason = !app.isPackaged
+    ? 'mode développement'
+    : process.platform !== 'win32'
+      ? 'Windows uniquement'
+      : !target
+        ? 'exe non portable (PORTABLE_EXECUTABLE_FILE absente)'
+        : null
+  if (reason) {
+    set({ kind: 'disabled', version: app.getVersion(), message: `Mises à jour désactivées : ${reason}` })
+    return
+  }
   // Reste de la mise à jour précédente (l'ancien exe, renommé avant le remplacement)
   void rm(`${target}.old`, { force: true }).catch(() => undefined)
-  set({ kind: 'up-to-date', version: app.getVersion() })
+  set({ kind: 'up-to-date', version: app.getVersion(), message: 'Vérification en cours…' })
   void check()
   setInterval(() => void check(), EVERY_MS)
 }

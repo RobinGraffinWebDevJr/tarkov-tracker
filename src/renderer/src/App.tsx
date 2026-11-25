@@ -32,7 +32,18 @@ function App(): React.JSX.Element {
           )}
           {update?.kind === 'downloading' && <div className="muted">Téléchargement de v{update.latest}…</div>}
           {update?.kind === 'failed' && <div className="warn">Mise à jour impossible : {update.message}</div>}
-          <div className="muted">{update ? `v${update.version}` : ''}</div>
+          {update && update.kind !== 'available' && update.kind !== 'downloading' && update.message && (
+            <div className="muted">{update.message}</div>
+          )}
+          {update && update.kind !== 'disabled' && update.kind !== 'downloading' && (
+            <button className="link" onClick={() => void window.api.checkUpdate().then(setUpdate)}>
+              Vérifier les mises à jour
+            </button>
+          )}
+          <div className="muted">
+            {update ? `v${update.version}` : ''}
+            {update?.checkedAt ? ` · vérifié à ${new Date(update.checkedAt).toLocaleTimeString('fr-FR')}` : ''}
+          </div>
         </div>
       </aside>
       <main className="main">

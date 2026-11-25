@@ -73,3 +73,5 @@ tr.done td { opacity: .45; }
 .zone .foot { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
 
 img.preview { max-width: 640px; width: 100%; border: 1px solid var(--border); border-radius: 8px; margin-top: 8px; }
+
+button.link { background: none; border: none; padding: 0; color: var(--accent); text-align: left; text-decoration: underline; font-size: 12px; }

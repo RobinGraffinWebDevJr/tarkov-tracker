@@ -45,12 +45,16 @@ export interface Progress {
 
 export const emptyProgress = (): Progress => ({ stationLevels: {}, inventory: {} })
 
-export type UpdateState =
-  | { kind: 'disabled'; version: string }
-  | { kind: 'up-to-date'; version: string }
-  | { kind: 'available'; version: string; latest: string }
-  | { kind: 'downloading'; version: string; latest: string }
-  | { kind: 'failed'; version: string; message: string }
+export interface UpdateState {
+  kind: 'disabled' | 'up-to-date' | 'available' | 'downloading' | 'failed'
+  version: string
+  /** Dernière version publiée (available, downloading) */
+  latest?: string
+  /** Raison de l'état : pourquoi désactivée, erreur de vérification ou d'installation */
+  message?: string
+  /** Heure de la dernière vérification terminée (ms) */
+  checkedAt?: number
+}
 
 export interface ScanStatus {
   running: boolean

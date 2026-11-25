@@ -19,6 +19,7 @@ const api = {
     return () => ipcRenderer.removeListener('scan:changed', handler)
   },
   getUpdateState: (): Promise<UpdateState> => ipcRenderer.invoke('update:get'),
+  checkUpdate: (): Promise<UpdateState> => ipcRenderer.invoke('update:check'),
   installUpdate: (): Promise<void> => ipcRenderer.invoke('update:install'),
   onUpdate: (cb: (s: UpdateState) => void): (() => void) => {
     const handler = (_e: unknown, s: UpdateState): void => cb(s)
