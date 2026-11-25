@@ -16,6 +16,8 @@ interface SavedPage {
   sig: Uint8Array
   page: number | null
   file: string
+  gx: number
+  gy: number
 }
 
 export interface PagePlan {
@@ -102,15 +104,18 @@ export class PageCollector {
       file,
       isNew: !same,
       commit: () => {
-        if (same) same.sig = sig
-        else this.pages.push({ sig, page: current, file })
+        if (same) {
+          same.sig = sig
+          same.gx = win.gx
+          same.gy = win.gy
+        } else this.pages.push({ sig, page: current, file, gx: win.gx, gy: win.gy })
       }
     }
     return { kind: same ? 'replaced' : 'saved', current, plan, indexChanged: false }
   }
 
   index(): ScanPage[] {
-    return this.pages.map(({ page, file }) => ({ page, file }))
+    return this.pages.map(({ page, file, gx, gy }) => ({ page, file, gx, gy }))
   }
 
   summary(active: boolean, current: number | null): SearchScan {

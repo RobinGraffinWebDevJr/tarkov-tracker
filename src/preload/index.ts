@@ -1,10 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
+  CatalogData,
   GameMode,
   HideoutData,
   MarketData,
   Progress,
   QuestLogImport,
+  ScanPage,
   ScanStatus,
   TasksData,
   UpdateState
@@ -17,6 +19,18 @@ const api = {
     ipcRenderer.invoke('hideout:get', mode, force),
   getMarket: (mode: GameMode, force = false): Promise<MarketData> =>
     ipcRenderer.invoke('market:get', mode, force),
+  getCatalog: (mode: GameMode, force = false): Promise<CatalogData> =>
+    ipcRenderer.invoke('recog:catalog', mode, force),
+  getGrids: (wanted: { id: string; url: string }[]): Promise<{ id: string; bytes: Uint8Array }[]> =>
+    ipcRenderer.invoke('recog:grids', wanted),
+  getLastScanSession: (): Promise<{ dir: string; pages: ScanPage[] } | null> =>
+    ipcRenderer.invoke('recog:session'),
+  getScanPage: (dir: string, file: string): Promise<Uint8Array | null> =>
+    ipcRenderer.invoke('recog:page', dir, file),
+  saveAnalysis: (dir: string, json: string): Promise<boolean> =>
+    ipcRenderer.invoke('recog:save-analysis', dir, json),
+  readNames: (pngs: Uint8Array[], lang = 'fr-FR'): Promise<{ reads: string[]; error?: string }> =>
+    ipcRenderer.invoke('recog:ocr', pngs, lang),
   getTasks: (mode: GameMode, force = false): Promise<TasksData> =>
     ipcRenderer.invoke('tasks:get', mode, force),
   importQuestLogs: (mode: GameMode, choose = false): Promise<QuestLogImport> =>

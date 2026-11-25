@@ -8,6 +8,8 @@ import { initUpdater } from './updater'
 import { initScan } from './scan'
 import { getMarket } from './market'
 import { initQuestLogs } from './questLogs'
+import { initRecognition } from './recognition'
+import { initOcr } from './ocr'
 import type { GameMode } from '../shared/types'
 
 function createWindow(): void {
@@ -64,6 +66,8 @@ app.whenReady().then(() => {
   initUpdater()
   initScan()
   initQuestLogs()
+  initRecognition()
+  initOcr()
   createWindow()
 
   app.on('activate', function () {

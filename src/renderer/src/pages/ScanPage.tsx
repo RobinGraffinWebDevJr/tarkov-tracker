@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ScanStatus } from '../../../shared/types'
+import ScanAnalysis from './ScanAnalysis'
 
 export default function ScanPage(): React.JSX.Element {
   const [s, setS] = useState<ScanStatus | null>(null)
@@ -31,8 +32,9 @@ export default function ScanPage(): React.JSX.Element {
       </div>
 
       <div className="warn">
-        Version de test : le scan capture la fenêtre du jeu et enregistre les images, mais la
-        reconnaissance des items n&apos;est pas encore active. Ces images servent à la calibrer.
+        Version de test : le scan capture la fenêtre du jeu et enregistre les images. Une fois
+        le scan terminé, la reconnaissance des objets se lance plus bas avec « Analyser le dernier
+        scan ». Elle se trompe encore dans une partie des cas : vérifie les objets proposés.
       </div>
 
       <div className="cards">
@@ -105,6 +107,8 @@ export default function ScanPage(): React.JSX.Element {
       )}
 
       {s?.preview && <img className="preview" src={s.preview} alt="Dernière capture du jeu" />}
+
+      {!running && <ScanAnalysis />}
     </>
   )
 }
