@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { GameMode, HideoutData, Progress, UpdateState } from '../shared/types'
+import type { GameMode, HideoutData, Progress, ScanStatus, UpdateState } from '../shared/types'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
@@ -9,6 +9,15 @@ const api = {
   loadProgress: (mode: GameMode): Promise<Progress> => ipcRenderer.invoke('progress:load', mode),
   saveProgress: (mode: GameMode, p: Progress): Promise<void> =>
     ipcRenderer.invoke('progress:save', mode, p),
+  getScan: (): Promise<ScanStatus> => ipcRenderer.invoke('scan:get'),
+  startScan: (): Promise<void> => ipcRenderer.invoke('scan:start'),
+  stopScan: (): Promise<void> => ipcRenderer.invoke('scan:stop'),
+  openScanDir: (): Promise<void> => ipcRenderer.invoke('scan:open-dir'),
+  onScan: (cb: (s: ScanStatus) => void): (() => void) => {
+    const handler = (_e: unknown, s: ScanStatus): void => cb(s)
+    ipcRenderer.on('scan:changed', handler)
+    return () => ipcRenderer.removeListener('scan:changed', handler)
+  },
   getUpdateState: (): Promise<UpdateState> => ipcRenderer.invoke('update:get'),
   installUpdate: (): Promise<void> => ipcRenderer.invoke('update:install'),
   onUpdate: (cb: (s: UpdateState) => void): (() => void) => {

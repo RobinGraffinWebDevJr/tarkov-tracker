@@ -1,6 +1,6 @@
 {
   "name": "tarkov-tracker",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Compagnon de bureau pour Escape from Tarkov : planque, prix du flea, inventaire",
   "main": "./out/main/index.js",
   "author": "",

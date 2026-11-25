@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import HideoutPage from './pages/HideoutPage'
+import ScanPage from './pages/ScanPage'
 import type { UpdateState } from '../../shared/types'
 
-type Tab = 'hideout' | 'inventory' | 'quests'
+type Tab = 'hideout' | 'scan' | 'quests'
 
 function App(): React.JSX.Element {
   const [tab, setTab] = useState<Tab>('hideout')
@@ -19,7 +20,9 @@ function App(): React.JSX.Element {
         <button className={`nav ${tab === 'hideout' ? 'active' : ''}`} onClick={() => setTab('hideout')}>
           Planque
         </button>
-        <button className="nav" disabled>Inventaire (bientôt)</button>
+        <button className={`nav ${tab === 'scan' ? 'active' : ''}`} onClick={() => setTab('scan')}>
+          Scan inventaire
+        </button>
         <button className="nav" disabled>Quêtes (bientôt)</button>
         <div className="sidebar-foot">
           {update?.kind === 'available' && (
@@ -32,7 +35,10 @@ function App(): React.JSX.Element {
           <div className="muted">{update ? `v${update.version}` : ''}</div>
         </div>
       </aside>
-      <main className="main">{tab === 'hideout' && <HideoutPage />}</main>
+      <main className="main">
+        {tab === 'hideout' && <HideoutPage />}
+        {tab === 'scan' && <ScanPage />}
+      </main>
     </div>
   )
 }

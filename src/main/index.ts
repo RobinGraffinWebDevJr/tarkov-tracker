@@ -5,6 +5,7 @@ import icon from '../../resources/icon.png?asset'
 import { getHideout } from './tarkov'
 import { loadProgress, saveProgress } from './progress'
 import { initUpdater } from './updater'
+import { initScan } from './scan'
 import type { GameMode } from '../shared/types'
 
 function createWindow(): void {
@@ -58,6 +59,7 @@ app.whenReady().then(() => {
   ipcMain.handle('progress:save', (_e, mode: GameMode, p) => saveProgress(mode, p))
 
   initUpdater()
+  initScan()
   createWindow()
 
   app.on('activate', function () {

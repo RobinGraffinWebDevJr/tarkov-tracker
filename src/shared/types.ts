@@ -51,3 +51,20 @@ export type UpdateState =
   | { kind: 'available'; version: string; latest: string }
   | { kind: 'downloading'; version: string; latest: string }
   | { kind: 'failed'; version: string; message: string }
+
+export interface ScanStatus {
+  running: boolean
+  /** Fenêtre du jeu trouvée dans la dernière capture */
+  found: boolean
+  width: number
+  height: number
+  /** Captures faites / images enregistrées sur disque pendant cette session */
+  frames: number
+  saved: number
+  /** Image noire : le jeu est en plein écran exclusif, la capture ne voit rien */
+  black: boolean
+  dir: string
+  message: string
+  /** Aperçu (data URL) de la dernière capture */
+  preview: string | null
+}
