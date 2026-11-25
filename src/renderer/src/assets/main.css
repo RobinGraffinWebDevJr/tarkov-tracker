@@ -75,3 +75,22 @@ tr.done td { opacity: .45; }
 img.preview { max-width: 640px; width: 100%; border: 1px solid var(--border); border-radius: 8px; margin-top: 8px; }
 
 button.link { background: none; border: none; padding: 0; color: var(--accent); text-align: left; text-decoration: underline; font-size: 12px; }
+
+a { color: var(--flea); }
+a:hover { color: var(--accent); }
+.quest { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; }
+.quest-head { display: flex; align-items: center; gap: 12px; padding: 10px 14px; cursor: pointer; }
+.quest-head:hover { background: var(--panel-2); border-radius: 10px; }
+.quest-head .name { flex: 1; font-weight: 600; }
+.quest-head .arrow { color: var(--muted); width: 12px; }
+.quest-body { padding: 6px 18px 14px 36px; border-top: 1px solid var(--border); }
+.quest-body h4 { margin: 12px 0 4px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+.quest-body ul { margin: 0; padding-left: 18px; }
+.obj { margin: 8px 0; }
+.tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted); margin-left: 6px; white-space: nowrap; }
+.tag.fir { color: var(--fir); border-color: var(--fir); }
+.tag.flea { color: var(--flea); border-color: var(--flea); }
+.tag.trader { color: var(--trader); border-color: var(--trader); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chip { display: flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; font-size: 12px; }
+.chip img { width: 26px; height: 26px; object-fit: contain; }

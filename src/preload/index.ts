@@ -1,11 +1,26 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { GameMode, HideoutData, Progress, ScanStatus, UpdateState } from '../shared/types'
+import type {
+  GameMode,
+  HideoutData,
+  MarketData,
+  Progress,
+  QuestLogImport,
+  ScanStatus,
+  TasksData,
+  UpdateState
+} from '../shared/types'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
 const api = {
   getHideout: (mode: GameMode, force = false): Promise<HideoutData> =>
     ipcRenderer.invoke('hideout:get', mode, force),
+  getMarket: (mode: GameMode, force = false): Promise<MarketData> =>
+    ipcRenderer.invoke('market:get', mode, force),
+  getTasks: (mode: GameMode, force = false): Promise<TasksData> =>
+    ipcRenderer.invoke('tasks:get', mode, force),
+  importQuestLogs: (mode: GameMode, choose = false): Promise<QuestLogImport> =>
+    ipcRenderer.invoke('quests:import-logs', mode, choose),
   loadProgress: (mode: GameMode): Promise<Progress> => ipcRenderer.invoke('progress:load', mode),
   saveProgress: (mode: GameMode, p: Progress): Promise<void> =>
     ipcRenderer.invoke('progress:save', mode, p),

@@ -6,6 +6,8 @@ import { getHideout } from './tarkov'
 import { loadProgress, saveProgress } from './progress'
 import { initUpdater } from './updater'
 import { initScan } from './scan'
+import { getMarket } from './market'
+import { initQuestLogs } from './questLogs'
 import type { GameMode } from '../shared/types'
 
 function createWindow(): void {
@@ -54,12 +56,14 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  ipcMain.handle('market:get', (_e, mode: GameMode, force?: boolean) => getMarket(mode, !!force))
   ipcMain.handle('hideout:get', (_e, mode: GameMode, force?: boolean) => getHideout(mode, !!force))
   ipcMain.handle('progress:load', (_e, mode: GameMode) => loadProgress(mode))
   ipcMain.handle('progress:save', (_e, mode: GameMode, p) => saveProgress(mode, p))
 
   initUpdater()
   initScan()
+  initQuestLogs()
   createWindow()
 
   app.on('activate', function () {

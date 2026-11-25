@@ -8,7 +8,7 @@ import type { GameMode, HideoutData, HideoutReq, HideoutStation, ReqKind } from 
  * donc disponibles même quand le GraphQL est en panne). Liste : https://json.tarkov.dev/endpoints
  */
 const BASE = 'https://json.tarkov.dev'
-const LANG = 'fr'
+export const LANG = 'fr'
 /** Les prix flea sont rafraîchis côté tarkov.dev en moins d'une heure (médiane mesurée : ~25 min). */
 const CACHE_TTL_MS = 15 * 60 * 1000
 
@@ -43,9 +43,10 @@ const CURRENCY_IDS = new Set([
   '5696686a4bdc2da3298b456a'
 ])
 
-const cachePath = (mode: GameMode): string => join(app.getPath('userData'), `hideout-cache-${mode}.json`)
+const cachePath = (mode: GameMode): string =>
+  join(app.getPath('userData'), `hideout-cache-${mode}.json`)
 
-async function getJson<T>(path: string): Promise<T> {
+export async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}/${path}`, { signal: AbortSignal.timeout(60_000) })
   if (!res.ok) throw new Error(`${path} : HTTP ${res.status}`)
   return (await res.json()) as T
@@ -56,10 +57,18 @@ function toReq(raw: RawReq, items: Record<string, RawItem>, tr: Translations): H
   if (!it) return null
   const fir = raw.attributes?.foundInRaid === true
   const noFlea = it.types?.includes('noFlea') ?? false
-  const traderPrices = (it.buyFromTrader ?? []).map((b) => b.priceRUB).filter((p): p is number => !!p)
+  const traderPrices = (it.buyFromTrader ?? [])
+    .map((b) => b.priceRUB)
+    .filter((p): p is number => !!p)
   const cheapestTrader = traderPrices.length ? Math.min(...traderPrices) : null
 
-  let kind: ReqKind = CURRENCY_IDS.has(it.id) ? 'currency' : fir ? 'fir' : noFlea ? 'trader' : 'flea'
+  let kind: ReqKind = CURRENCY_IDS.has(it.id)
+    ? 'currency'
+    : fir
+      ? 'fir'
+      : noFlea
+        ? 'trader'
+        : 'flea'
   let unitPrice: number | null = null
   let priceSource: HideoutReq['priceSource'] = null
 
