@@ -1,0 +1,23 @@
+appId: dev.tarkov-tracker.app
+productName: Tarkov Tracker
+directories:
+  buildResources: build
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+asarUnpack:
+  - resources/**
+# Windows : un seul .exe portable (aucune installation). Les données de l'app restent dans
+# %APPDATA%\tarkov-tracker (progression, cache des prix).
+win:
+  executableName: tarkov-tracker
+  target:
+    - target: portable
+      arch: x64
+portable:
+  artifactName: tarkov-tracker-windows-x64.${ext}
+npmRebuild: false
