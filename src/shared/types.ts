@@ -44,3 +44,10 @@ export interface Progress {
 }
 
 export const emptyProgress = (): Progress => ({ stationLevels: {}, inventory: {} })
+
+export type UpdateState =
+  | { kind: 'disabled'; version: string }
+  | { kind: 'up-to-date'; version: string }
+  | { kind: 'available'; version: string; latest: string }
+  | { kind: 'downloading'; version: string; latest: string }
+  | { kind: 'failed'; version: string; message: string }

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { GameMode, HideoutData, Progress } from '../shared/types'
+import type { GameMode, HideoutData, Progress, UpdateState } from '../shared/types'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
@@ -8,7 +8,14 @@ const api = {
     ipcRenderer.invoke('hideout:get', mode, force),
   loadProgress: (mode: GameMode): Promise<Progress> => ipcRenderer.invoke('progress:load', mode),
   saveProgress: (mode: GameMode, p: Progress): Promise<void> =>
-    ipcRenderer.invoke('progress:save', mode, p)
+    ipcRenderer.invoke('progress:save', mode, p),
+  getUpdateState: (): Promise<UpdateState> => ipcRenderer.invoke('update:get'),
+  installUpdate: (): Promise<void> => ipcRenderer.invoke('update:install'),
+  onUpdate: (cb: (s: UpdateState) => void): (() => void) => {
+    const handler = (_e: unknown, s: UpdateState): void => cb(s)
+    ipcRenderer.on('update:changed', handler)
+    return () => ipcRenderer.removeListener('update:changed', handler)
+  }
 }
 export type Api = typeof api
 
