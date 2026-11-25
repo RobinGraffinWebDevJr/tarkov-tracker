@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { computeMissing, formatRub, remainingLevels, type MissingItem } from '../../../shared/compute'
+import { computeUpgrades, type Upgrade } from '../../../shared/priorities'
+import { LevelsEditor, Priorities } from './HideoutPriorities'
 import { emptyProgress, type GameMode, type HideoutData, type Progress, type ReqKind } from '../../../shared/types'
 
-type View = 'items' | 'zones'
+type View = 'priorities' | 'items' | 'zones'
 type KindFilter = 'all' | ReqKind
 
 const KIND_LABEL: Record<ReqKind, string> = {
@@ -20,7 +22,7 @@ export default function HideoutPage(): React.JSX.Element {
   const [mode, setMode] = useState<GameMode>(
     () => (localStorage.getItem('gameMode') as GameMode | null) ?? 'regular'
   )
-  const [view, setView] = useState<View>('items')
+  const [view, setView] = useState<View>('priorities')
   const [kindFilter, setKindFilter] = useState<KindFilter>('all')
   const [nextOnly, setNextOnly] = useState(false)
   const [hideDone, setHideDone] = useState(true)
@@ -72,6 +74,16 @@ export default function HideoutPage(): React.JSX.Element {
   const setOwned = (itemId: string, qty: number): void =>
     setProgress((p) => ({ ...p, inventory: { ...p.inventory, [itemId]: Math.max(0, qty) } }))
 
+  const upgrades = useMemo(() => computeUpgrades(stations, progress), [stations, progress])
+  /** Zone construite en jeu : on monte son niveau et on retire de l'inventaire ce qu'elle a consommé. */
+  const build = (u: Upgrade): void =>
+    setProgress((p) => {
+      const inventory = { ...p.inventory }
+      for (const it of u.items)
+        if (it.covered > 0) inventory[it.itemId] = Math.max(0, (inventory[it.itemId] ?? 0) - it.covered)
+      return { ...p, stationLevels: { ...p.stationLevels, [u.stationId]: u.level }, inventory }
+    })
+
   const rows = missing.filter(
     (m) => (kindFilter === 'all' || m.kind === kindFilter) && (!hideDone || m.missing > 0)
   )
@@ -116,6 +128,7 @@ export default function HideoutPage(): React.JSX.Element {
 
       <div className="topbar">
         <div className="seg">
+          <button className={view === 'priorities' ? 'active' : ''} onClick={() => setView('priorities')}>Priorités</button>
           <button className={view === 'items' ? 'active' : ''} onClick={() => setView('items')}>Par item</button>
           <button className={view === 'zones' ? 'active' : ''} onClick={() => setView('zones')}>Par zone</button>
         </div>
@@ -136,7 +149,18 @@ export default function HideoutPage(): React.JSX.Element {
         )}
       </div>
 
-      {view === 'items' ? (
+      {view === 'priorities' ? (
+        <>
+          <h3>Mes niveaux de planque</h3>
+          <p className="muted">
+            Le tracker ne peut pas lire ces niveaux dans le jeu : règle-les une fois, ils sont
+            enregistrés pour ce mode.
+          </p>
+          <LevelsEditor stations={stations} progress={progress} onLevel={setLevel} />
+          <h3>Améliorations à faire, dans l&apos;ordre</h3>
+          <Priorities upgrades={upgrades} onBuild={build} />
+        </>
+      ) : view === 'items' ? (
         <ItemsTable rows={rows} onOwned={setOwned} />
       ) : (
         <div className="zones">

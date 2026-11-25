@@ -32,7 +32,14 @@ interface RawStation {
   id: string
   name: string
   imageLink: string | null
-  levels: { level: number; itemRequirements: RawReq[] }[]
+  levels: {
+    level: number
+    constructionTime?: number
+    itemRequirements: RawReq[]
+    stationLevelRequirements?: { station: string; level: number }[]
+    traderRequirements?: { trader: string; value: number }[]
+    skillRequirements?: { skill: string; level: number }[]
+  }[]
 }
 type Translations = Record<string, string>
 
@@ -43,8 +50,31 @@ const CURRENCY_IDS = new Set([
   '5696686a4bdc2da3298b456a'
 ])
 
+// v2 : les niveaux portent maintenant leurs prérequis (zones, marchands, compétences) et leur durée
 const cachePath = (mode: GameMode): string =>
-  join(app.getPath('userData'), `hideout-cache-${mode}.json`)
+  join(app.getPath('userData'), `hideout-cache-v2-${mode}.json`)
+
+/** Noms français des compétences citées par la planque (le jeu les écrit en anglais). */
+const SKILL_FR: Record<string, string> = {
+  HideoutManagement: 'Gestion de la planque',
+  Crafting: 'Artisanat',
+  Endurance: 'Endurance',
+  Strength: 'Force',
+  Health: 'Santé',
+  Metabolism: 'Métabolisme',
+  Attention: 'Attention',
+  Perception: 'Perception',
+  Intellect: 'Intellect',
+  Memory: 'Mémoire',
+  Charisma: 'Charisme',
+  Vitality: 'Vitalité',
+  Immunity: 'Immunité',
+  StressResistance: 'Résistance au stress',
+  Covert: 'Mouvement furtif',
+  Search: 'Fouille',
+  MagDrills: 'Manipulation des chargeurs',
+  Sniper: 'Tireur d’élite'
+}
 
 export async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}/${path}`, { signal: AbortSignal.timeout(60_000) })
@@ -113,11 +143,12 @@ export async function getHideout(mode: GameMode, forceRefresh = false): Promise<
     return { ...cached, fromCache: true }
   }
   try {
-    const [hideout, hideoutTr, items, itemsTr] = await Promise.all([
+    const [hideout, hideoutTr, items, itemsTr, tradersTr] = await Promise.all([
       getJson<{ data: Record<string, RawStation> }>(`${mode}/hideout`),
       getJson<{ data: Translations }>(`${mode}/hideout_${LANG}`),
       getJson<{ data: { items: Record<string, RawItem> } }>(`${mode}/items`),
-      getJson<{ data: Translations }>(`${mode}/items_${LANG}`)
+      getJson<{ data: Translations }>(`${mode}/items_${LANG}`),
+      getJson<{ data: Translations }>(`${mode}/traders_${LANG}`)
     ])
     const stations: HideoutStation[] = Object.values(hideout.data)
       .map((s) => ({
@@ -129,7 +160,20 @@ export async function getHideout(mode: GameMode, forceRefresh = false): Promise<
             level: l.level,
             requirements: l.itemRequirements
               .map((r) => toReq(r, items.data.items, itemsTr.data))
-              .filter((r): r is HideoutReq => r !== null)
+              .filter((r): r is HideoutReq => r !== null),
+            time: l.constructionTime ?? 0,
+            stationReqs: (l.stationLevelRequirements ?? []).map((r) => ({
+              stationId: r.station,
+              level: r.level
+            })),
+            traderReqs: (l.traderRequirements ?? []).map((r) => ({
+              trader: tradersTr.data[`${r.trader} Nickname`] ?? r.trader,
+              level: r.value
+            })),
+            skillReqs: (l.skillRequirements ?? []).map((r) => ({
+              skill: SKILL_FR[r.skill] ?? r.skill,
+              level: r.level
+            }))
           }))
           .sort((a, b) => a.level - b.level)
       }))

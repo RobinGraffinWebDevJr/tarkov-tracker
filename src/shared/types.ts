@@ -15,9 +15,18 @@ export interface HideoutReq {
   priceSource: 'flea-avg' | 'flea-low' | 'trader' | 'base' | null
 }
 
+/** Ce qu'un niveau de zone exige en dehors des objets. */
 export interface HideoutLevel {
   level: number
   requirements: HideoutReq[]
+  /** Durée de construction en secondes */
+  time: number
+  /** Niveaux d'autres zones à avoir d'abord */
+  stationReqs: { stationId: string; level: number }[]
+  /** Niveaux de marchand à avoir (le niveau du joueur n'est pas connu du tracker) */
+  traderReqs: { trader: string; level: number }[]
+  /** Compétences à avoir (idem) */
+  skillReqs: { skill: string; level: number }[]
 }
 
 export interface HideoutStation {
@@ -85,6 +94,9 @@ export interface ScanPage {
   /** Numéro de page lu dans la pagination du jeu, null s'il n'a pas pu être lu */
   page: number | null
   file: string
+  /** Coin haut-gauche de la grille dans l'image, pour la reconnaissance (absent des anciens scans) */
+  gx?: number
+  gy?: number
 }
 
 /** État de la lecture de la fenêtre « Recherche d'objet » (stash). */
@@ -117,6 +129,29 @@ export interface ScanStatus {
   search: SearchScan
   /** Dernières lignes du journal de la session (le journal complet est dans scan.log, dans le dossier de la session) */
   log: string[]
+}
+
+/** Un objet du jeu, pour la reconnaissance dans la grille du stash. */
+export interface CatalogEntry {
+  id: string
+  name: string
+  shortName: string
+  /** Taille en cases */
+  w: number
+  h: number
+  /** Taille maximale d'une pile (1 = objet qui ne s'empile pas) */
+  stack: number
+  /** Types de tarkov.dev : ammo, ammoBox, grenade, mods, gun, keys, barter… */
+  types: string[]
+  /** Image de l'objet sur une grille de cases, chez tarkov.dev */
+  gridUrl: string
+}
+
+export interface CatalogData {
+  mode: GameMode
+  items: CatalogEntry[]
+  fetchedAt: number
+  error?: string
 }
 
 /** Un objet du flea market, avec les prix utiles à l'affichage. Prix en roubles. */
