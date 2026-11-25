@@ -187,6 +187,9 @@ export function sigDistance(a: Uint8Array, b: Uint8Array): number {
 const SLOT_CX = [323, 360, 397]
 const PAGER_CY = 775
 const INK_MIN = 150
+/** Mesurés sur 69 chiffres de 13 pages, un par un hors entraînement : toutes les bonnes réponses ont un score d'au moins 0,54 et 0,17 de marge. */
+const MIN_SCORE = 0.5
+const MIN_MARGIN = 0.12
 
 export interface PagerState {
   /** Case (0, 1 ou 2) en surbrillance = page courante, -1 si illisible */
@@ -244,17 +247,24 @@ function readSlotNumber(bmp: Bitmap, win: SearchWindow, cx: number): number | nu
     for (let j = 0; j < GLYPH_H; j++)
       for (let i = c0; i <= c1; i++) g[j * GLYPH_W + (i - c0)] = inkOf(L[j * 36 + i])
     const q = normalise(g)
-    let best = ''
-    let bs = -2
+    // meilleur score par chiffre ; on exige un score minimal ET une marge sur le deuxième chiffre
+    const perDigit = new Map<string, number>()
     for (const t of TEMPLATES) {
-      let s = 0
-      for (let i = 0; i < q.length; i++) s += q[i] * t.v[i]
-      if (s > bs) {
-        bs = s
-        best = t.ch
-      }
+      let d = 0
+      for (let i = 0; i < q.length; i++) d += q[i] * t.v[i]
+      if (d > (perDigit.get(t.ch) ?? -2)) perDigit.set(t.ch, d)
     }
-    if (bs < 0.9) return null // chiffre inconnu (0 et 9 n'ont pas encore de modèle) : on ne devine pas
+    let best = ''
+    let s1 = -2
+    let s2 = -2
+    for (const [ch, d] of perDigit) {
+      if (d > s1) {
+        s2 = s1
+        s1 = d
+        best = ch
+      } else if (d > s2) s2 = d
+    }
+    if (s1 < MIN_SCORE || s1 - s2 < MIN_MARGIN) return null // illisible : on ne devine pas
     text += best
   }
   return Number(text)

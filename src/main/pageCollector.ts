@@ -27,7 +27,11 @@ export interface PagePlan {
   commit: () => void
 }
 
+export type ObservationKind = 'waiting' | 'limit' | 'seen' | 'saved' | 'replaced'
+
 export interface Observation {
+  /** Ce qui s'est passé : attente de stabilité, limite atteinte, page déjà vue, page nouvelle, page remplacée */
+  kind: ObservationKind
   /** Page affichée, null si la pagination n'a pas pu être lue */
   current: number | null
   /** Image à enregistrer maintenant, sinon null */
@@ -74,7 +78,8 @@ export class PageCollector {
 
     this.stable = this.prev && sigDistance(sig, this.prev) < STABLE_DIST ? this.stable + 1 : 0
     this.prev = sig
-    if (this.stable < 1 || !canSave) return { current, plan: null, indexChanged: false }
+    if (this.stable < 1) return { kind: 'waiting', current, plan: null, indexChanged: false }
+    if (!canSave) return { kind: 'limit', current, plan: null, indexChanged: false }
 
     const similar = this.pages.find((p) => sigDistance(p.sig, sig) < SAME_PAGE_DIST)
     if (similar) {
@@ -85,9 +90,9 @@ export class PageCollector {
         !this.pages.some((p) => p.page === current)
       ) {
         similar.page = current
-        return { current, plan: null, indexChanged: true }
+        return { kind: 'seen', current, plan: null, indexChanged: true }
       }
-      return { current, plan: null, indexChanged: false }
+      return { kind: 'seen', current, plan: null, indexChanged: false }
     }
 
     // Même numéro de page mais contenu différent (un item a bougé) : la plus récente remplace l'ancienne.
@@ -101,7 +106,7 @@ export class PageCollector {
         else this.pages.push({ sig, page: current, file })
       }
     }
-    return { current, plan, indexChanged: false }
+    return { kind: same ? 'replaced' : 'saved', current, plan, indexChanged: false }
   }
 
   index(): ScanPage[] {

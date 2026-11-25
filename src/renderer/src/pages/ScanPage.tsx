@@ -92,6 +92,18 @@ export default function ScanPage(): React.JSX.Element {
         </p>
       )}
 
+      {s && s.log.length > 0 && (
+        <>
+          <h3>Journal</h3>
+          <pre className="muted" style={{ whiteSpace: 'pre-wrap', fontSize: 12, margin: 0 }}>
+            {s.log.slice(-14).join('\n')}
+          </pre>
+          <p className="muted">
+            Le journal complet est dans le fichier scan.log du dossier de la session.
+          </p>
+        </>
+      )}
+
       {s?.preview && <img className="preview" src={s.preview} alt="Dernière capture du jeu" />}
     </>
   )

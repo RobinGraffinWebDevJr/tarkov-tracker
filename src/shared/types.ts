@@ -90,4 +90,6 @@ export interface ScanStatus {
   /** Aperçu (data URL) de la dernière capture */
   preview: string | null
   search: SearchScan
+  /** Dernières lignes du journal de la session (le journal complet est dans scan.log, dans le dossier de la session) */
+  log: string[]
 }

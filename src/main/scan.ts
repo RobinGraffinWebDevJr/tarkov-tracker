@@ -1,5 +1,5 @@
 import { app, BrowserWindow, desktopCapturer, ipcMain, screen, shell } from 'electron'
-import { mkdir, writeFile } from 'fs/promises'
+import { appendFile, mkdir, writeFile } from 'fs/promises'
 import { join } from 'path'
 import type { ScanStatus, SearchScan } from '../shared/types'
 import { PageCollector } from './pageCollector'
@@ -25,6 +25,8 @@ const GAME_TITLE = /escape\s*from\s*tarkov/i
 const CHANGE_THRESHOLD = 6
 /** Intervalle minimal entre deux aperçus envoyés à l'interface (l'encodage coûte, la boucle est rapide). */
 const PREVIEW_EVERY_MS = 1200
+/** Lignes du journal gardées pour l'interface (tout est écrit dans scan.log). */
+const LOG_KEEP = 40
 
 const idleSearch = (): SearchScan => ({ active: false, pages: [], current: null, missing: [] })
 
@@ -39,7 +41,8 @@ const idle = (): ScanStatus => ({
   dir: '',
   message: '',
   preview: null,
-  search: idleSearch()
+  search: idleSearch(),
+  log: []
 })
 
 let status = idle()
@@ -50,6 +53,22 @@ let lastSig: Buffer | null = null
 let searchHint: { closeX: number; closeY: number } | null = null
 const collector = new PageCollector()
 let lastPreviewAt = 0
+
+// Pour ne journaliser que les changements, pas chaque capture
+let prevFound: boolean | null = null
+let prevSearchActive = false
+let prevLoggedPage: number | null | undefined
+let prevUnsupported = false
+
+/**
+ * Journal de la session : visible dans l'écran de scan et écrit dans scan.log (dossier de la
+ * session). Il permet de savoir après coup ce que le scan a vu, sans devoir regarder l'écran.
+ */
+function note(text: string): void {
+  const line = `${new Date().toLocaleTimeString('fr-FR')}  ${text}`
+  status = { ...status, log: [...status.log, line].slice(-LOG_KEEP) }
+  if (status.dir) void appendFile(join(status.dir, 'scan.log'), line + '\n').catch(() => undefined)
+}
 
 function emit(patch: Partial<ScanStatus>): void {
   status = { ...status, ...patch }
@@ -77,6 +96,9 @@ async function tick(): Promise<void> {
     const sources = await desktopCapturer.getSources({ types: ['window'], thumbnailSize: size })
     const src = sources.find((s) => GAME_TITLE.test(s.name))
     if (!src) {
+      if (prevFound !== false)
+        note('Fenêtre du jeu introuvable (Tarkov doit être lancé en fenêtré sans bordure).')
+      prevFound = false
       emit({
         found: false,
         search: collector.summary(false, null),
@@ -88,6 +110,8 @@ async function tick(): Promise<void> {
       if (width === 0 || height === 0) {
         emit({ found: true, message: 'Fenêtre du jeu réduite : affiche-la à l’écran.' })
       } else {
+        if (prevFound !== true) note(`Fenêtre du jeu trouvée (${width}×${height}).`)
+        prevFound = true
         const frames = status.frames + 1
         let saved = status.saved
         let message = ''
@@ -95,9 +119,18 @@ async function tick(): Promise<void> {
         let search = status.search
 
         const supported = width === SUPPORTED_WIDTH && height === SUPPORTED_HEIGHT
+        if (!supported && !prevUnsupported)
+          note(
+            `Résolution ${width}×${height} : la lecture de la recherche d'objet demande du 1920×1080.`
+          )
+        prevUnsupported = !supported
         const bmp: Bitmap | null = supported ? { width, height, data: img.toBitmap() } : null
         const win = bmp ? findSearchWindow(bmp, searchHint) : null
         searchHint = win ? { closeX: win.closeX, closeY: win.closeY } : null
+        if (win && !prevSearchActive)
+          note(`Recherche d'objet détectée (grille en ${win.gx},${win.gy}) : une image par page.`)
+        if (!win && prevSearchActive) note("Recherche d'objet fermée ou masquée.")
+        prevSearchActive = !!win
 
         if (bmp && win) {
           // --- fenêtre « Recherche d'objet » : une image par page ---
@@ -111,6 +144,20 @@ async function tick(): Promise<void> {
           } else if (obs.indexChanged) {
             await writePagesIndex()
           }
+          if (obs.kind === 'saved')
+            note(`Page ${obs.current ?? '?'} enregistrée (${obs.plan?.file}).`)
+          else if (obs.kind === 'replaced')
+            note(
+              `Page ${obs.current ?? '?'} : le contenu a changé, image remplacée (${obs.plan?.file}).`
+            )
+          else if (obs.current !== prevLoggedPage) {
+            if (obs.current === null)
+              note('Numéro de page illisible : la page sera repérée par son contenu.')
+            else if (obs.kind === 'seen') note(`Page ${obs.current} déjà enregistrée.`)
+            else if (obs.kind === 'limit')
+              note(`Limite de ${MAX_SAVED} images atteinte : plus rien n'est enregistré.`)
+          }
+          if (obs.kind !== 'waiting') prevLoggedPage = obs.current
           search = collector.summary(true, obs.current)
           message =
             saved >= MAX_SAVED
@@ -139,6 +186,7 @@ async function tick(): Promise<void> {
             )
             saved++
             lastSig = sig
+            note(`Image enregistrée (frame-${String(frames).padStart(4, '0')}).`)
           }
           message = black
             ? 'Image noire : passe le jeu en fenêtré sans bordure (le plein écran exclusif ne se capture pas).'
@@ -182,7 +230,12 @@ async function start(): Promise<void> {
   searchHint = null
   collector.reset()
   lastPreviewAt = 0
+  prevFound = null
+  prevSearchActive = false
+  prevLoggedPage = undefined
+  prevUnsupported = false
   status = { ...idle(), running: true, dir, message: 'Recherche de la fenêtre du jeu…' }
+  note('Session démarrée.')
   emit({})
   void tick()
 }
@@ -190,6 +243,12 @@ async function start(): Promise<void> {
 function stop(): void {
   if (timer) clearTimeout(timer)
   timer = null
+  const sum = collector.summary(false, null)
+  note(
+    `Session terminée : ${status.saved} image(s) enregistrée(s), ${status.frames} capture(s). Pages : ${
+      sum.pages.length ? sum.pages.map((p) => p.page ?? '?').join(', ') : 'aucune'
+    }${sum.missing.length ? `. Pages à voir : ${sum.missing.join(', ')}` : ''}.`
+  )
   emit({ running: false, message: '' })
 }
 
